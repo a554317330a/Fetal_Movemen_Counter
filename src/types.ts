@@ -1,7 +1,10 @@
+export type UserRole = 'wife' | 'husband';
+
 export interface MovementRecord {
   id: string;
   timestamp: number; // Date.now()
   count: number;
+  recordedBy: UserRole;
 }
 
 export interface UserSettings {

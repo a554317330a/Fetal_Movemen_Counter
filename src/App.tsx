@@ -1,45 +1,39 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserSettings, MovementRecord, DailySummary } from './types';
+import { UserSettings, MovementRecord, DailySummary, UserRole } from './types';
 import { Setup } from './components/Setup';
 import { Counter } from './components/Counter';
 import { Stats } from './components/Stats';
 import { Analysis } from './components/Analysis';
+import { Login } from './components/Login';
 import { calculateCurrentGestationalAge, formatGestationalAge } from './lib/utils';
-import { format, isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
-import { Activity, BarChart2, ShieldCheck, Settings, Baby } from 'lucide-react';
+import { Activity, BarChart2, ShieldCheck, Settings, Baby, LogOut } from 'lucide-react';
 import { cn } from './lib/utils';
 
-const STORAGE_KEY_SETTINGS = 'fetal_counter_settings';
-const STORAGE_KEY_RECORDS = 'fetal_counter_records';
-
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<UserRole | null>(null);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [records, setRecords] = useState<MovementRecord[]>([]);
   const [activeTab, setActiveTab] = useState<'counter' | 'stats' | 'analysis'>('counter');
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load data from localStorage
+  // Fetch initial data
   useEffect(() => {
-    const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
-    const savedRecords = localStorage.getItem(STORAGE_KEY_RECORDS);
-    
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
-    }
-    if (savedRecords) {
-      setRecords(JSON.parse(savedRecords));
-    }
-    setIsInitialized(true);
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        setSettings(data.settings);
+        setRecords(data.records);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, []);
-
-  // Save data to localStorage
-  useEffect(() => {
-    if (isInitialized) {
-      if (settings) localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
-      localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(records));
-    }
-  }, [settings, records, isInitialized]);
 
   const currentGA = useMemo(() => {
     if (!settings) return null;
@@ -64,12 +58,55 @@ export default function App() {
     return Array.from(dailyMap.values()).sort((a, b) => b.date.localeCompare(a.date));
   }, [records]);
 
-  const handleRecord = (record: MovementRecord) => {
-    setRecords(prev => [record, ...prev]);
+  const handleRecord = async (record: MovementRecord) => {
+    const recordWithUser = { ...record, recordedBy: currentUser! };
+    try {
+      const response = await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ record: recordWithUser }),
+      });
+      if (response.ok) {
+        setRecords(prev => {
+          const index = prev.findIndex(r => r.id === recordWithUser.id);
+          if (index !== -1) {
+            const newRecords = [...prev];
+            newRecords[index] = recordWithUser;
+            // Re-sort to keep most recent at top if timestamp changed
+            return newRecords.sort((a, b) => b.timestamp - a.timestamp);
+          }
+          return [recordWithUser, ...prev];
+        });
+      }
+    } catch (error) {
+      console.error('Failed to save record:', error);
+    }
   };
 
-  const handleDeleteRecord = (id: string) => {
-    setRecords(prev => prev.filter(r => r.id !== id));
+  const handleDeleteRecord = async (id: string) => {
+    try {
+      const response = await fetch(`/api/records/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        setRecords(prev => prev.filter(r => r.id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete record:', error);
+    }
+  };
+
+  const handleSetSettings = async (newSettings: UserSettings) => {
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: newSettings }),
+      });
+      if (response.ok) {
+        setSettings(newSettings);
+      }
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+    }
   };
 
   const handleResetSettings = () => {
@@ -78,10 +115,18 @@ export default function App() {
     }
   };
 
-  if (!isInitialized) return null;
+  const handleLogout = () => {
+    setCurrentUser(null);
+  };
+
+  if (isLoading) return null;
+
+  if (!currentUser) {
+    return <Login onLogin={setCurrentUser} />;
+  }
 
   if (!settings) {
-    return <Setup onComplete={setSettings} />;
+    return <Setup onComplete={handleSetSettings} />;
   }
 
   return (
@@ -96,16 +141,24 @@ export default function App() {
             <div>
               <h1 className="text-lg font-semibold serif text-brand-primary">萌动</h1>
               <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">
-                孕 {formatGestationalAge(currentGA!)}
+                孕 {formatGestationalAge(currentGA!)} · {currentUser === 'wife' ? '准妈妈' : '准爸爸'}
               </div>
             </div>
           </div>
-          <button 
-            onClick={handleResetSettings}
-            className="p-2 text-gray-300 hover:text-brand-primary transition-colors"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleResetSettings}
+              className="p-2 text-gray-300 hover:text-brand-primary transition-colors"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="p-2 text-gray-300 hover:text-red-400 transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </header>
 

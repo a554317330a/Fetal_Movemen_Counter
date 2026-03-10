@@ -10,13 +10,19 @@ interface SetupProps {
 export const Setup: React.FC<SetupProps> = ({ onComplete }) => {
   const [weeks, setWeeks] = useState<number>(28);
   const [days, setDays] = useState<number>(0);
+  const [code, setCode] = useState<string>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!code) {
+      alert('请设置访问密码');
+      return;
+    }
     onComplete({
       refDate: Date.now(),
       refWeeks: weeks,
       refDays: days,
+      accessCode: code,
     });
   };
 
@@ -58,6 +64,17 @@ export const Setup: React.FC<SetupProps> = ({ onComplete }) => {
               className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary/20 text-lg font-medium"
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">设置访问密码 (用于两人同步数据)</label>
+          <input
+            type="password"
+            placeholder="输入密码"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-brand-primary/20 text-lg font-medium"
+          />
         </div>
 
         <button type="submit" className="w-full olive-button py-4 text-lg font-medium flex items-center justify-center gap-2">
