@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cormorant Garamond", serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-primary: #5A5A40; /* Olive */
+  --color-brand-bg: #f5f5f0; /* Warm off-white */
+  --color-brand-card: #FFFFFF;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-brand-bg);
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+}
+
+.serif {
+  font-family: var(--font-serif);
+}
+
+.card {
+  background-color: var(--color-brand-card);
+  border-radius: 24px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.olive-button {
+  background-color: var(--color-brand-primary);
+  color: white;
+  border-radius: 9999px;
+  padding: 12px 24px;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+.olive-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.olive-button:active {
+  transform: translateY(0);
+}
+
+/* Custom scrollbar for a cleaner look */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(90, 90, 64, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(90, 90, 64, 0.4);
+}
