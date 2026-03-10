@@ -180,7 +180,7 @@ export default function App() {
               />
             )}
             {activeTab === 'stats' && (
-              <Stats summaries={summaries} />
+              <Stats summaries={summaries} gestationalAge={currentGA!} />
             )}
             {activeTab === 'analysis' && (
               <Analysis summaries={summaries} currentWeeks={currentGA!.weeks} />
